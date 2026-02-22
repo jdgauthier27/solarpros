@@ -48,7 +48,32 @@ class SOSLookupClient(BaseSOSLookupClient):
 
     SEARCH_URL = "https://bizfileonline.sos.ca.gov/search/business"
 
+    # Overall timeout for the entire SOS lookup (browser launch + navigation + scraping)
+    LOOKUP_TIMEOUT_SECONDS = 45
+
     async def search_entity(self, entity_name: str) -> dict | None:
+        try:
+            return await asyncio.wait_for(
+                self._do_search(entity_name),
+                timeout=self.LOOKUP_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "sos_lookup_timeout",
+                entity_name=entity_name,
+                timeout=self.LOOKUP_TIMEOUT_SECONDS,
+            )
+            return None
+        except Exception as exc:
+            logger.warning(
+                "sos_lookup_error",
+                entity_name=entity_name,
+                error=str(exc),
+                error_type=type(exc).__name__,
+            )
+            return None
+
+    async def _do_search(self, entity_name: str) -> dict | None:
         try:
             from playwright.async_api import async_playwright
         except ImportError:
@@ -68,9 +93,9 @@ class SOSLookupClient(BaseSOSLookupClient):
                     )
                 )
                 page = await context.new_page()
-                page.set_default_timeout(30_000)
+                page.set_default_timeout(20_000)
 
-                await page.goto(self.SEARCH_URL, wait_until="networkidle")
+                await page.goto(self.SEARCH_URL, wait_until="domcontentloaded")
 
                 # Type the entity name into the search field
                 search_input = page.locator("#SearchCriteria")
@@ -125,7 +150,7 @@ class SOSLookupClient(BaseSOSLookupClient):
 
                 if link_exists > 0:
                     await link.click()
-                    await page.wait_for_load_state("networkidle")
+                    await page.wait_for_load_state("domcontentloaded")
 
                     # Extract entity type from detail page
                     entity_type_el = page.locator(

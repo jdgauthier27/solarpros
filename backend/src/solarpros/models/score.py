@@ -32,6 +32,11 @@ class ProspectScore(Base):
     contact_quality_score: Mapped[float] = mapped_column(Float, default=0.0)
     building_age_score: Mapped[float] = mapped_column(Float, default=0.0)
 
+    # V2: 3 new scoring dimensions
+    trigger_event_score: Mapped[float] = mapped_column(Float, default=0.0)
+    contact_depth_score: Mapped[float] = mapped_column(Float, default=0.0)
+    decision_maker_quality_score: Mapped[float] = mapped_column(Float, default=0.0)
+
     composite_score: Mapped[float] = mapped_column(Float, default=0.0)
     tier: Mapped[str] = mapped_column(String(1), default="C")  # A, B, C
     scoring_version: Mapped[int] = mapped_column(Integer, default=1)

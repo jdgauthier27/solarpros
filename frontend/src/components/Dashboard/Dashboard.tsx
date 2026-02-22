@@ -156,6 +156,9 @@ export function Dashboard() {
     { label: "Tier B", value: overview.tier_b_count },
     { label: "Tier C", value: overview.tier_c_count },
     { label: "Avg Score", value: overview.avg_score.toFixed(1) },
+    { label: "Contacts", value: overview.total_contacts ?? 0 },
+    { label: "Triggers", value: overview.total_triggers ?? 0 },
+    { label: "Outreach Touches", value: overview.total_outreach_touches ?? 0 },
     { label: "Emails Sent", value: overview.total_emails_sent },
     { label: "Opens", value: overview.total_opens },
     { label: "Replies", value: overview.total_replies },
@@ -212,6 +215,27 @@ export function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Channel Breakdown */}
+      {overview.channels_used && Object.keys(overview.channels_used).length > 0 && (
+        <div style={chartCardStyle}>
+          <div style={chartTitleStyle}>Outreach by Channel</div>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart
+              data={Object.entries(overview.channels_used).map(([channel, count]) => ({
+                channel: channel.replace("_", " "),
+                count,
+              }))}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="channel" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }

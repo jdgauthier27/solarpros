@@ -29,15 +29,22 @@ def create_app() -> FastAPI:
     )
 
     # Register routers
-    from solarpros.api.v1 import agents, campaigns, dashboard, owners, properties, scores, solar
+    from solarpros.api.v1 import (
+        agents, campaigns, contacts, dashboard, outreach, owners,
+        properties, scores, solar, takeoff, trigger_events,
+    )
 
     app.include_router(properties.router, prefix="/api/v1")
     app.include_router(solar.router, prefix="/api/v1")
     app.include_router(owners.router, prefix="/api/v1")
+    app.include_router(contacts.router, prefix="/api/v1")
     app.include_router(scores.router, prefix="/api/v1")
     app.include_router(campaigns.router, prefix="/api/v1")
     app.include_router(agents.router, prefix="/api/v1")
     app.include_router(dashboard.router, prefix="/api/v1")
+    app.include_router(trigger_events.router, prefix="/api/v1")
+    app.include_router(outreach.router, prefix="/api/v1")
+    app.include_router(takeoff.router, prefix="/api/v1")
 
     @app.get("/api/v1/health")
     async def health():

@@ -40,6 +40,7 @@ services:
       - ./backend/alembic.ini:/app/alembic.ini
       - ./backend/alembic:/app/alembic
       - ./scripts:/app/scripts
+      - takeoff_data:/data/takeoff
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,6 +80,34 @@ services:
       context: .
       dockerfile: infra/docker/worker.Dockerfile
     command: celery -A solarpros.celery_app.app worker -Q owner_lookup -c 2 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-enrichment:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q enrichment -c 2 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-triggers:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q trigger_events -c 2 --loglevel=info
     env_file: .env
     volumes:
       - ./backend/src:/app/src
@@ -130,6 +159,21 @@ services:
       redis:
         condition: service_healthy
 
+  worker-takeoff:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q takeoff -c 2 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+      - takeoff_data:/data/takeoff
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   beat:
     build:
       context: .
@@ -173,3 +217,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  takeoff_data:

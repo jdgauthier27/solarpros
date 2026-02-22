@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     sendgrid_api_key: str = ""
     anthropic_api_key: str = ""
 
+    # V2 API Keys
+    ca_sos_api_key: str = ""
+    apollo_api_key: str = ""
+    google_places_api_key: str = ""
+    serper_api_key: str = ""
+
     # SendGrid
     sendgrid_from_email: str = "solar@yourcompany.com"
     sendgrid_from_name: str = "SolarPros"
@@ -37,6 +43,8 @@ class Settings(BaseSettings):
     use_mock_apis: bool = True
     use_mock_solar: bool | None = None   # Override for solar; falls back to use_mock_apis
     use_mock_owner: bool | None = None   # Override for owner; falls back to use_mock_apis
+    use_mock_enrichment: bool | None = None  # Override for enrichment; falls back to use_mock_apis
+    use_mock_triggers: bool | None = None  # Override for trigger events; falls back to use_mock_apis
 
     @property
     def solar_use_mock(self) -> bool:
@@ -45,6 +53,14 @@ class Settings(BaseSettings):
     @property
     def owner_use_mock(self) -> bool:
         return self.use_mock_owner if self.use_mock_owner is not None else self.use_mock_apis
+
+    @property
+    def enrichment_use_mock(self) -> bool:
+        return self.use_mock_enrichment if self.use_mock_enrichment is not None else self.use_mock_apis
+
+    @property
+    def triggers_use_mock(self) -> bool:
+        return self.use_mock_triggers if self.use_mock_triggers is not None else self.use_mock_apis
 
     # CAN-SPAM
     company_physical_address: str = "123 Solar Way, Suite 100, Los Angeles, CA 90001"
@@ -55,6 +71,13 @@ class Settings(BaseSettings):
     solar_api_rate_per_minute: int = 100
     owner_lookup_rate_per_minute: int = 30
     email_rate_per_hour: int = 100
+
+    # Takeoff
+    takeoff_storage_backend: str = "local"
+    takeoff_storage_path: str = "/data/takeoff"
+    takeoff_max_upload_mb: int = 100
+    takeoff_claude_model: str = "claude-sonnet-4-5-20250514"
+    takeoff_classification_rate_per_minute: int = 30
 
     @property
     def cors_origin_list(self) -> list[str]:

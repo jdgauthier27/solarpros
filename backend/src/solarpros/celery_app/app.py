@@ -29,6 +29,8 @@ def create_celery_app() -> Celery:
         "solarpros.agents.scoring.tasks.*": {"queue": "scoring"},
         "solarpros.agents.email_outreach.tasks.*": {"queue": "email"},
         "solarpros.agents.controller.*": {"queue": "orchestration"},
+        "solarpros.agents.takeoff.ingestion.tasks.*": {"queue": "takeoff"},
+        "solarpros.agents.takeoff.classification.tasks.*": {"queue": "takeoff"},
     }
 
     # Rate limits per task
@@ -45,6 +47,9 @@ def create_celery_app() -> Celery:
         "solarpros.agents.email_outreach.tasks.*": {
             "rate_limit": f"{settings.email_rate_per_hour}/h",
         },
+        "solarpros.agents.takeoff.classification.tasks.classify_sheets": {
+            "rate_limit": f"{settings.takeoff_classification_rate_per_minute}/m",
+        },
     }
 
     # Default retry policy
@@ -60,6 +65,8 @@ def create_celery_app() -> Celery:
             "solarpros.agents.scoring",
             "solarpros.agents.email_outreach",
             "solarpros.agents.controller",
+            "solarpros.agents.takeoff.ingestion",
+            "solarpros.agents.takeoff.classification",
         ]
     )
 

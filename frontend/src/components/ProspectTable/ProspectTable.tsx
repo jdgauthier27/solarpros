@@ -38,6 +38,13 @@ interface Prospect {
   owner_type_score: number;
   contact_quality_score: number;
   building_age_score: number;
+  trigger_event_score: number;
+  contact_depth_score: number;
+  decision_maker_quality_score: number;
+  contact_count: number;
+  trigger_count: number;
+  outreach_status: string | null;
+  buying_roles: string[] | null;
 }
 
 const TIERS = ['All', 'A', 'B', 'C'];
@@ -132,6 +139,8 @@ const ProspectTable: React.FC = () => {
                   <th style={thStyle}>Contact</th>
                   <th style={thStyle}>Tier</th>
                   <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('composite_score')}>Score{sortIcon('composite_score')}</th>
+                  <th style={thStyle}>Contacts</th>
+                  <th style={thStyle}>Triggers</th>
                   <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('system_size_kw')}>System{sortIcon('system_size_kw')}</th>
                   <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('annual_savings')}>Savings/yr{sortIcon('annual_savings')}</th>
                   <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('payback_years')}>Payback{sortIcon('payback_years')}</th>
@@ -159,6 +168,23 @@ const ProspectTable: React.FC = () => {
                       </td>
                       <td style={tdStyle}><span style={tierBadge(p.tier)}>{p.tier}</span></td>
                       <td style={{ ...tdStyle, fontWeight: 700, color: '#111827' }}>{p.composite_score}</td>
+                      <td style={tdStyle}>
+                        <span style={{ fontWeight: 500 }}>{p.contact_count ?? 0}</span>
+                        {p.buying_roles && p.buying_roles.length > 0 && (
+                          <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', marginTop: '2px' }}>
+                            {p.buying_roles.map((role, i) => (
+                              <span key={i} style={roleBadge(role)}>{roleShort(role)}</span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td style={tdStyle}>
+                        {(p.trigger_count ?? 0) > 0 ? (
+                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600, backgroundColor: '#fef3c7', color: '#92400e' }}>
+                            {p.trigger_count}
+                          </span>
+                        ) : '-'}
+                      </td>
                       <td style={tdStyle}>{p.system_size_kw ? `${p.system_size_kw} kW` : '-'}</td>
                       <td style={{ ...tdStyle, color: '#059669', fontWeight: 500 }}>{fmtDollar(p.annual_savings)}</td>
                       <td style={tdStyle}>{p.payback_years ? `${p.payback_years} yr` : '-'}</td>
@@ -166,7 +192,7 @@ const ProspectTable: React.FC = () => {
                     </tr>
                     {expandedId === p.id && (
                       <tr>
-                        <td colSpan={9} style={{ padding: '16px 20px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                        <td colSpan={11} style={{ padding: '16px 20px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                             {/* Left: Contact Details */}
                             <div>
@@ -226,7 +252,10 @@ const ProspectTable: React.FC = () => {
                                   ['Owner', p.owner_type_score],
                                   ['Contact', p.contact_quality_score],
                                   ['Age', p.building_age_score],
-                                ] as [string, number][]).map(([label, val]) => (
+                                  ['Trigger', p.trigger_event_score],
+                                  ['Depth', p.contact_depth_score],
+                                  ['DM Quality', p.decision_maker_quality_score],
+                                ] as [string, number][]).filter(([, val]) => val != null).map(([label, val]) => (
                                   <span key={label} style={{ fontSize: '11px', padding: '2px 6px', background: scoreColor(val), borderRadius: '4px', color: '#fff' }}>
                                     {label}: {val}
                                   </span>
@@ -240,7 +269,7 @@ const ProspectTable: React.FC = () => {
                   </React.Fragment>
                 ))}
                 {sorted.length === 0 && (
-                  <tr><td colSpan={9} style={{ ...tdStyle, textAlign: 'center', color: '#9ca3af', padding: '40px' }}>No prospects found</td></tr>
+                  <tr><td colSpan={11} style={{ ...tdStyle, textAlign: 'center', color: '#9ca3af', padding: '40px' }}>No prospects found</td></tr>
                 )}
               </tbody>
             </table>
@@ -269,6 +298,26 @@ const tierBadge = (tier: string): React.CSSProperties => ({
   backgroundColor: tier === 'A' ? '#dcfce7' : tier === 'B' ? '#fef3c7' : '#fee2e2',
   color: tier === 'A' ? '#166534' : tier === 'B' ? '#92400e' : '#991b1b',
 });
+
+const ROLE_COLORS: Record<string, { bg: string; text: string }> = {
+  economic_buyer: { bg: '#dbeafe', text: '#1e40af' },
+  champion: { bg: '#dcfce7', text: '#166534' },
+  technical_evaluator: { bg: '#f3e8ff', text: '#6b21a8' },
+  financial_evaluator: { bg: '#fef3c7', text: '#92400e' },
+  influencer: { bg: '#f3f4f6', text: '#374151' },
+};
+const ROLE_SHORT: Record<string, string> = {
+  economic_buyer: 'EB',
+  champion: 'CH',
+  technical_evaluator: 'TE',
+  financial_evaluator: 'FE',
+  influencer: 'IN',
+};
+const roleShort = (role: string) => ROLE_SHORT[role] ?? role.slice(0, 2).toUpperCase();
+const roleBadge = (role: string): React.CSSProperties => {
+  const colors = ROLE_COLORS[role] ?? { bg: '#f3f4f6', text: '#374151' };
+  return { display: 'inline-block', padding: '1px 5px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, backgroundColor: colors.bg, color: colors.text };
+};
 
 const scoreColor = (val: number): string => {
   if (val >= 80) return '#059669';

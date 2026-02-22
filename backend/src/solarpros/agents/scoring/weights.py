@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 
 @dataclass
@@ -14,30 +14,41 @@ class ScoringWeights:
     building_age: float = 0.05
 
     def __post_init__(self) -> None:
-        total = (
-            self.solar_potential
-            + self.roof_size
-            + self.savings
-            + self.utility_zone
-            + self.owner_type
-            + self.contact_quality
-            + self.building_age
-        )
+        total = sum(getattr(self, f.name) for f in fields(self))
         if abs(total - 1.0) > 0.001:
             raise ValueError(
                 f"Scoring weights must sum to 1.0 (got {total:.4f})"
             )
 
     def to_dict(self) -> dict[str, float]:
-        return {
-            "solar_potential": self.solar_potential,
-            "roof_size": self.roof_size,
-            "savings": self.savings,
-            "utility_zone": self.utility_zone,
-            "owner_type": self.owner_type,
-            "contact_quality": self.contact_quality,
-            "building_age": self.building_age,
-        }
+        return {f.name: getattr(self, f.name) for f in fields(self)}
+
+
+@dataclass
+class ScoringWeightsV2:
+    """V2 weights with 10 scoring dimensions. Must sum to 1.0."""
+
+    solar_potential: float = 0.18
+    roof_size: float = 0.12
+    savings: float = 0.15
+    utility_zone: float = 0.06
+    owner_type: float = 0.06
+    contact_quality: float = 0.08
+    building_age: float = 0.05
+    trigger_event: float = 0.15
+    contact_depth: float = 0.08
+    decision_maker_quality: float = 0.07
+
+    def __post_init__(self) -> None:
+        total = sum(getattr(self, f.name) for f in fields(self))
+        if abs(total - 1.0) > 0.001:
+            raise ValueError(
+                f"ScoringWeightsV2 must sum to 1.0 (got {total:.4f})"
+            )
+
+    def to_dict(self) -> dict[str, float]:
+        return {f.name: getattr(self, f.name) for f in fields(self)}
 
 
 DEFAULT_WEIGHTS = ScoringWeights()
+DEFAULT_WEIGHTS_V2 = ScoringWeightsV2()

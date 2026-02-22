@@ -117,7 +117,12 @@ class OwnerIDAgent(BaseAgent):
             self.hunter_client: BaseHunterIOClient = MockHunterIOClient()
         else:
             self.sos_client = SOSLookupClient()
-            self.hunter_client = HunterIOClient()
+            # Hunter.io requires an API key; fall back to mock if not configured
+            if settings.hunter_io_api_key and settings.hunter_io_api_key != "your_hunter_io_api_key_here":
+                self.hunter_client = HunterIOClient()
+            else:
+                logger.info("hunter_io_key_not_set_using_mock")
+                self.hunter_client = MockHunterIOClient()
 
     # ----- LLM entity resolution -----
 

@@ -11,4 +11,9 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(minute="*/5"),
         "options": {"queue": "orchestration"},
     },
+    "daily-trigger-scan": {
+        "task": "solarpros.agents.trigger_events.tasks.daily_trigger_scan",
+        "schedule": crontab(hour=6, minute=0),  # Daily at 6 AM
+        "options": {"queue": "trigger_events"},
+    },
 }

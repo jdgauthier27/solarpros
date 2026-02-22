@@ -193,11 +193,162 @@ export interface DashboardOverview {
   total_emails_sent: number;
   total_opens: number;
   total_replies: number;
+  // V2 metrics
+  total_contacts: number;
+  total_triggers: number;
+  total_outreach_touches: number;
+  channels_used: Record<string, number>;
 }
 
 export interface FunnelStage {
   stage: string;
   count: number;
+}
+
+// ---------------------------------------------------------------------------
+// V2: Contact interfaces
+// ---------------------------------------------------------------------------
+
+export type BuyingRole =
+  | "economic_buyer"
+  | "champion"
+  | "technical_evaluator"
+  | "financial_evaluator"
+  | "influencer";
+
+export interface Contact {
+  id: string;
+  owner_id: string;
+  full_name: string;
+  first_name: string | null;
+  last_name: string | null;
+  job_title: string | null;
+  buying_role: BuyingRole | null;
+  email: string | null;
+  email_verified: boolean;
+  email_source: string | null;
+  phone: string | null;
+  phone_type: string | null;
+  phone_source: string | null;
+  linkedin_url: string | null;
+  confidence_score: number;
+  is_primary: boolean;
+  opted_out: boolean;
+  enrichment_sources: Record<string, boolean> | null;
+  created_at: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// V2: Trigger event interfaces
+// ---------------------------------------------------------------------------
+
+export interface TriggerEvent {
+  id: string;
+  property_id: string;
+  owner_id: string | null;
+  event_type: string;
+  title: string;
+  source: string;
+  source_url: string | null;
+  detected_at: string;
+  event_date: string | null;
+  relevance_score: number;
+  raw_data: Record<string, unknown> | null;
+  created_at: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// V2: Outreach interfaces
+// ---------------------------------------------------------------------------
+
+export type OutreachChannel = "email" | "linkedin" | "phone" | "direct_mail";
+
+export interface OutreachTouch {
+  id: string;
+  campaign_id: string;
+  contact_id: string;
+  channel: OutreachChannel;
+  status: string;
+  sendgrid_message_id: string | null;
+  sent_at: string | null;
+  opened_at: string | null;
+  replied_at: string | null;
+  call_duration_seconds: number | null;
+  call_outcome: string | null;
+  linkedin_connection_status: string | null;
+  response_type: string | null;
+  notes: string | null;
+  created_at: string | null;
+}
+
+export interface OutreachTouchUpdate {
+  status?: string;
+  call_duration_seconds?: number;
+  call_outcome?: string;
+  linkedin_connection_status?: string;
+  response_type?: string;
+  notes?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Takeoff interfaces
+// ---------------------------------------------------------------------------
+
+export interface TakeoffProject {
+  id: string;
+  name: string;
+  description: string | null;
+  status: "pending" | "ingesting" | "classifying" | "completed" | "failed";
+  original_filename: string;
+  file_size_bytes: number;
+  total_pages: number | null;
+  sheets_classified: number;
+  sheets_failed: number;
+  classification_summary: Record<string, number> | null;
+  project_name: string | null;
+  project_address: string | null;
+  project_number: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TakeoffProjectDetail extends TakeoffProject {
+  sheets: PlanSheet[];
+}
+
+export interface PlanSheet {
+  id: string;
+  project_id: string;
+  page_number: number;
+  sheet_type: string | null;
+  classification_confidence: number | null;
+  sheet_number: string | null;
+  sheet_name: string | null;
+  is_raster: boolean;
+  thumbnail_path: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanSheetDetail extends PlanSheet {
+  classification_model: string | null;
+  project_name: string | null;
+  project_address: string | null;
+  date: string | null;
+  revision: string | null;
+  scale: string | null;
+  drawn_by: string | null;
+  checked_by: string | null;
+  applicable_codes: string | null;
+  full_image_path: string | null;
+  raw_classification: Record<string, unknown> | null;
+  raw_title_block: Record<string, unknown> | null;
+}
+
+export interface TakeoffUploadResponse {
+  project_id: string;
+  status: string;
+  message: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -297,4 +448,170 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
 export async function getDashboardFunnel(): Promise<FunnelStage[]> {
   const { data } = await api.get("/dashboard/funnel");
   return data;
+}
+
+// ---------------------------------------------------------------------------
+// V2 API functions: Contacts
+// ---------------------------------------------------------------------------
+
+export async function getContacts(params: {
+  owner_id?: string;
+  buying_role?: string;
+  has_email?: boolean;
+  skip?: number;
+  limit?: number;
+} = {}): Promise<Contact[]> {
+  const { data } = await api.get("/contacts/", { params });
+  return data;
+}
+
+export async function getContact(contactId: string): Promise<Contact> {
+  const { data } = await api.get(`/contacts/${contactId}`);
+  return data;
+}
+
+export async function optOutContact(
+  contactId: string,
+  optedOut: boolean = true
+): Promise<Contact> {
+  const { data } = await api.post(`/contacts/${contactId}/opt-out`, {
+    opted_out: optedOut,
+  });
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// V2 API functions: Trigger Events
+// ---------------------------------------------------------------------------
+
+export async function getTriggerEvents(params: {
+  property_id?: string;
+  event_type?: string;
+  skip?: number;
+  limit?: number;
+} = {}): Promise<TriggerEvent[]> {
+  const { data } = await api.get("/trigger-events/", { params });
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// V2 API functions: Outreach
+// ---------------------------------------------------------------------------
+
+export async function getOutreachQueue(params: {
+  channel?: OutreachChannel;
+  status?: string;
+  campaign_id?: string;
+  skip?: number;
+  limit?: number;
+} = {}): Promise<OutreachTouch[]> {
+  const { data } = await api.get("/outreach/queue", { params });
+  return data;
+}
+
+export async function getLinkedInActions(
+  status: string = "pending"
+): Promise<OutreachTouch[]> {
+  const { data } = await api.get("/outreach/linkedin-actions", {
+    params: { status },
+  });
+  return data;
+}
+
+export async function getCallList(
+  status: string = "pending"
+): Promise<OutreachTouch[]> {
+  const { data } = await api.get("/outreach/call-list", {
+    params: { status },
+  });
+  return data;
+}
+
+export async function getDirectMailQueue(
+  status: string = "pending"
+): Promise<OutreachTouch[]> {
+  const { data } = await api.get("/outreach/direct-mail", {
+    params: { status },
+  });
+  return data;
+}
+
+export async function updateOutreachTouch(
+  touchId: string,
+  payload: OutreachTouchUpdate
+): Promise<OutreachTouch> {
+  const { data } = await api.patch(`/outreach/${touchId}`, payload);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Takeoff API functions
+// ---------------------------------------------------------------------------
+
+export async function uploadTakeoffProject(
+  file: File,
+  name: string,
+  description?: string
+): Promise<TakeoffUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const params: Record<string, string> = { name };
+  if (description) params.description = description;
+  const { data } = await api.post("/takeoff/projects/upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    params,
+  });
+  return data;
+}
+
+export async function getTakeoffProjects(
+  status?: string
+): Promise<TakeoffProject[]> {
+  const { data } = await api.get("/takeoff/projects", {
+    params: status ? { status } : {},
+  });
+  return data;
+}
+
+export async function getTakeoffProjectDetail(
+  projectId: string
+): Promise<TakeoffProjectDetail> {
+  const { data } = await api.get(`/takeoff/projects/${projectId}`);
+  return data;
+}
+
+export async function getProjectSheets(
+  projectId: string,
+  sheetType?: string
+): Promise<PlanSheet[]> {
+  const { data } = await api.get(`/takeoff/projects/${projectId}/sheets`, {
+    params: sheetType ? { sheet_type: sheetType } : {},
+  });
+  return data;
+}
+
+export async function getProjectStatus(
+  projectId: string
+): Promise<Record<string, unknown>> {
+  const { data } = await api.get(`/takeoff/projects/${projectId}/status`);
+  return data;
+}
+
+export async function getSheetDetail(
+  sheetId: string
+): Promise<PlanSheetDetail> {
+  const { data } = await api.get(`/takeoff/sheets/${sheetId}`);
+  return data;
+}
+
+export async function reclassifySheet(
+  sheetId: string
+): Promise<PlanSheetDetail> {
+  const { data } = await api.post(`/takeoff/sheets/${sheetId}/reclassify`);
+  return data;
+}
+
+export function getTakeoffFileUrl(path: string): string {
+  const base = import.meta.env.VITE_API_URL || "/api/v1";
+  return `${base}/takeoff/files/${path}`;
 }

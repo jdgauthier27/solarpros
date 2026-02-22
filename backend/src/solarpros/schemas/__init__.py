@@ -25,6 +25,14 @@ from solarpros.schemas.property import (
 )
 from solarpros.schemas.score import ProspectScoreRead, ScoreDistribution
 from solarpros.schemas.solar import SolarAnalysisRead
+from solarpros.schemas.takeoff import (
+    PlanSheetDetail,
+    PlanSheetRead,
+    SheetType,
+    TakeoffProjectDetail,
+    TakeoffProjectRead,
+    TakeoffUploadResponse,
+)
 
 __all__ = [
     # Property
@@ -56,4 +64,11 @@ __all__ = [
     # Dashboard
     "DashboardOverview",
     "FunnelStage",
+    # Takeoff
+    "SheetType",
+    "PlanSheetRead",
+    "PlanSheetDetail",
+    "TakeoffProjectRead",
+    "TakeoffProjectDetail",
+    "TakeoffUploadResponse",
 ]

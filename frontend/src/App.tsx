@@ -4,13 +4,18 @@ import PropertyMap from "./components/PropertyMap/PropertyMap";
 import ProspectTable from "./components/ProspectTable/ProspectTable";
 import CampaignManager from "./components/CampaignManager/CampaignManager";
 import AgentStatus from "./components/AgentStatus/AgentStatus";
+import OutreachQueues from "./components/OutreachQueues/OutreachQueues";
+import TakeoffUpload from "./components/TakeoffUpload/TakeoffUpload";
+import SheetBrowser from "./components/SheetBrowser/SheetBrowser";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: "\u2302" },
   { to: "/properties", label: "Properties", icon: "\u2630" },
   { to: "/map", label: "Map", icon: "\u25CB" },
   { to: "/campaigns", label: "Campaigns", icon: "\u2709" },
+  { to: "/outreach", label: "Outreach", icon: "\u260E" },
   { to: "/agents", label: "Agents", icon: "\u2699" },
+  { to: "/takeoff", label: "Takeoff", icon: "\u2702" },
 ];
 
 const sidebarStyle: React.CSSProperties = {
@@ -83,7 +88,10 @@ export default function App() {
           <Route path="/properties" element={<ProspectTable />} />
           <Route path="/map" element={<PropertyMap />} />
           <Route path="/campaigns" element={<CampaignManager />} />
+          <Route path="/outreach" element={<OutreachQueues />} />
           <Route path="/agents" element={<AgentStatus />} />
+          <Route path="/takeoff" element={<TakeoffUpload />} />
+          <Route path="/takeoff/:projectId" element={<SheetBrowser />} />
         </Routes>
       </main>
     </div>

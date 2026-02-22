@@ -41,6 +41,12 @@ dependencies = [
     # Email
     "sendgrid>=6.11.0",
 
+    # PDF / OCR
+    "PyMuPDF>=1.24.0",
+    "pytesseract>=0.3.10",
+    "aiofiles>=24.1.0",
+    "python-multipart>=0.0.9",
+
     # Utilities
     "python-dotenv>=1.0.0",
     "tenacity>=8.2.0",

@@ -15,9 +15,27 @@ import {
   createCampaign,
   pauseCampaign,
   resumeCampaign,
+  getContacts,
+  getContact,
+  optOutContact,
+  getTriggerEvents,
+  getOutreachQueue,
+  getLinkedInActions,
+  getCallList,
+  getDirectMailQueue,
+  updateOutreachTouch,
+  getTakeoffProjects,
+  getTakeoffProjectDetail,
+  uploadTakeoffProject,
+  reclassifySheet,
   type PropertyFilters,
   type PipelineStatus,
   type Campaign,
+  type OutreachTouch,
+  type OutreachTouchUpdate,
+  type OutreachChannel,
+  type TakeoffUploadResponse,
+  type PlanSheetDetail,
 } from "../api/client";
 
 // ---------------------------------------------------------------------------
@@ -158,5 +176,157 @@ export function useDashboardFunnel() {
   return useQuery({
     queryKey: ["dashboardFunnel"],
     queryFn: getDashboardFunnel,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// V2: Contacts
+// ---------------------------------------------------------------------------
+
+export function useContacts(params: {
+  owner_id?: string;
+  buying_role?: string;
+  has_email?: boolean;
+} = {}) {
+  return useQuery({
+    queryKey: ["contacts", params],
+    queryFn: () => getContacts(params),
+  });
+}
+
+export function useContact(contactId: string | null) {
+  return useQuery({
+    queryKey: ["contact", contactId],
+    queryFn: () => getContact(contactId!),
+    enabled: !!contactId,
+  });
+}
+
+export function useOptOutContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ contactId, optedOut }: { contactId: string; optedOut: boolean }) =>
+      optOutContact(contactId, optedOut),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// V2: Trigger Events
+// ---------------------------------------------------------------------------
+
+export function useTriggerEvents(params: {
+  property_id?: string;
+  event_type?: string;
+} = {}) {
+  return useQuery({
+    queryKey: ["triggerEvents", params],
+    queryFn: () => getTriggerEvents(params),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// V2: Outreach
+// ---------------------------------------------------------------------------
+
+export function useOutreachQueue(params: {
+  channel?: OutreachChannel;
+  status?: string;
+  campaign_id?: string;
+} = {}) {
+  return useQuery({
+    queryKey: ["outreachQueue", params],
+    queryFn: () => getOutreachQueue(params),
+  });
+}
+
+export function useLinkedInActions(status: string = "pending") {
+  return useQuery({
+    queryKey: ["linkedInActions", status],
+    queryFn: () => getLinkedInActions(status),
+  });
+}
+
+export function useCallList(status: string = "pending") {
+  return useQuery({
+    queryKey: ["callList", status],
+    queryFn: () => getCallList(status),
+  });
+}
+
+export function useDirectMailQueue(status: string = "pending") {
+  return useQuery({
+    queryKey: ["directMailQueue", status],
+    queryFn: () => getDirectMailQueue(status),
+  });
+}
+
+export function useUpdateOutreachTouch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ touchId, payload }: { touchId: string; payload: OutreachTouchUpdate }) =>
+      updateOutreachTouch(touchId, payload),
+    onSuccess: (_data: OutreachTouch) => {
+      qc.invalidateQueries({ queryKey: ["outreachQueue"] });
+      qc.invalidateQueries({ queryKey: ["linkedInActions"] });
+      qc.invalidateQueries({ queryKey: ["callList"] });
+      qc.invalidateQueries({ queryKey: ["directMailQueue"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Takeoff
+// ---------------------------------------------------------------------------
+
+export function useTakeoffProjects(status?: string) {
+  return useQuery({
+    queryKey: ["takeoffProjects", status],
+    queryFn: () => getTakeoffProjects(status),
+  });
+}
+
+export function useTakeoffProjectDetail(projectId: string | null) {
+  return useQuery({
+    queryKey: ["takeoffProject", projectId],
+    queryFn: () => getTakeoffProjectDetail(projectId!),
+    enabled: !!projectId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (status === "pending" || status === "ingesting" || status === "classifying") {
+        return 3000;
+      }
+      return false;
+    },
+  });
+}
+
+export function useUploadTakeoff() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      file,
+      name,
+      description,
+    }: {
+      file: File;
+      name: string;
+      description?: string;
+    }) => uploadTakeoffProject(file, name, description),
+    onSuccess: (_data: TakeoffUploadResponse) => {
+      qc.invalidateQueries({ queryKey: ["takeoffProjects"] });
+    },
+  });
+}
+
+export function useReclassifySheet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (sheetId: string) => reclassifySheet(sheetId),
+    onSuccess: (_data: PlanSheetDetail) => {
+      qc.invalidateQueries({ queryKey: ["takeoffProject"] });
+    },
   });
 }

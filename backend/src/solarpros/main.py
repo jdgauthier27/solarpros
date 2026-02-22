@@ -17,6 +17,7 @@ def create_app() -> FastAPI:
         description="Multi-Agent Solar Prospect Targeting System",
         version="0.1.0",
         lifespan=lifespan,
+        redirect_slashes=False,
     )
 
     app.add_middleware(

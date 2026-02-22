@@ -207,7 +207,7 @@ export interface FunnelStage {
 export async function getProperties(
   filters: PropertyFilters = {}
 ): Promise<PaginatedResponse<Property>> {
-  const { data } = await api.get("/properties", { params: filters });
+  const { data } = await api.get("/properties/", { params: filters });
   return data;
 }
 
@@ -233,7 +233,7 @@ export async function getPropertyStats(): Promise<Record<string, unknown>> {
 export async function getScores(
   params: Record<string, string | number> = {}
 ): Promise<any[]> {
-  const { data } = await api.get("/scores", { params });
+  const { data } = await api.get("/scores/", { params });
   return Array.isArray(data) ? data : data.items ?? data;
 }
 
@@ -243,14 +243,14 @@ export async function getScoreDistribution(): Promise<ScoreDistribution[]> {
 }
 
 export async function getCampaigns(): Promise<Campaign[]> {
-  const { data } = await api.get("/campaigns");
+  const { data } = await api.get("/campaigns/");
   return data;
 }
 
 export async function createCampaign(
   payload: CampaignCreate
 ): Promise<Campaign> {
-  const { data } = await api.post("/campaigns", payload);
+  const { data } = await api.post("/campaigns/", payload);
   return data;
 }
 

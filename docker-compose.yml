@@ -1,0 +1,169 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-solarpros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-solarpros}
+      POSTGRES_DB: ${POSTGRES_DB:-solarpros}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U solarpros"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/backend.Dockerfile
+    command: uvicorn solarpros.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-scraping:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q scraping -c 2 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-solar:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q solar_api -c 3 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-owner:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q owner_lookup -c 2 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-scoring:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q scoring -c 2 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-email:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q email -c 1 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-orchestration:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app worker -Q orchestration -c 1 --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app beat --loglevel=info
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  flower:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    command: celery -A solarpros.celery_app.app flower --port=5555
+    ports:
+      - "5555:5555"
+    env_file: .env
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/docker/frontend.Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+volumes:
+  pgdata:
+  redisdata:

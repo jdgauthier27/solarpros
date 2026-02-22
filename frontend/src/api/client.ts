@@ -9,6 +9,7 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+export { api };
 export default api;
 
 // ---------------------------------------------------------------------------
@@ -129,6 +130,7 @@ export interface Campaign {
   total_recipients: number;
   created_at: string;
   updated_at: string;
+  sequences: unknown[];
 }
 
 export interface CampaignCreate {
@@ -140,10 +142,11 @@ export interface CampaignCreate {
 export interface CampaignMetrics {
   campaign_id: string;
   total_sent: number;
-  total_delivered: number;
-  total_opened: number;
-  total_clicked: number;
-  total_replied: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  replied: number;
+  bounced: number;
   delivery_rate: number;
   open_rate: number;
   click_rate: number;
@@ -152,12 +155,14 @@ export interface CampaignMetrics {
 
 export interface PipelineStatus {
   pipeline_id: string;
-  status: "pending" | "running" | "completed" | "failed";
+  status: "pending" | "running" | "completed" | "failed" | "no_runs";
   current_stage: string | null;
   progress_pct: number;
   started_at: string;
   completed_at: string | null;
   error: string | null;
+  runs: AgentRun[];
+  progress: Record<string, string>;
 }
 
 export interface AgentRun {
@@ -170,6 +175,7 @@ export interface AgentRun {
   started_at: string | null;
   completed_at: string | null;
   error: string | null;
+  error_message: string | null;
 }
 
 export interface DashboardOverview {
@@ -221,10 +227,10 @@ export async function getPropertyStats(): Promise<Record<string, unknown>> {
 }
 
 export async function getScores(
-  filters: PropertyFilters = {}
-): Promise<PaginatedResponse<ScoreResult>> {
-  const { data } = await api.get("/scores", { params: filters });
-  return data;
+  params: Record<string, string | number> = {}
+): Promise<any[]> {
+  const { data } = await api.get("/scores", { params });
+  return Array.isArray(data) ? data : data.items ?? data;
 }
 
 export async function getScoreDistribution(): Promise<ScoreDistribution[]> {
@@ -261,24 +267,21 @@ export async function resumeCampaign(campaignId: string): Promise<Campaign> {
   return data;
 }
 
-export async function startPipeline(county: string): Promise<PipelineStatus> {
-  const { data } = await api.post("/pipeline/start", { county });
+export async function startPipeline(payload: {
+  counties: string[];
+  use_mock: boolean;
+}): Promise<PipelineStatus> {
+  const { data } = await api.post("/agents/pipeline/start", payload);
   return data;
 }
 
-export async function getPipelineStatus(
-  pipelineId: string
-): Promise<PipelineStatus> {
-  const { data } = await api.get(`/pipeline/${pipelineId}/status`);
+export async function getPipelineStatus(): Promise<PipelineStatus> {
+  const { data } = await api.get("/agents/pipeline/status");
   return data;
 }
 
-export async function getAgentRuns(
-  pipelineId?: string
-): Promise<AgentRun[]> {
-  const { data } = await api.get("/pipeline/runs", {
-    params: pipelineId ? { pipeline_id: pipelineId } : {},
-  });
+export async function getAgentRuns(): Promise<AgentRun[]> {
+  const { data } = await api.get("/agents/runs");
   return data;
 }
 

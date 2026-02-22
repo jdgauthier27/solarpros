@@ -1,9 +1,9 @@
 import { Routes, Route, NavLink } from "react-router-dom";
-import { Dashboard } from "./components/Dashboard/Dashboard";
-import { PropertyMap } from "./components/PropertyMap/PropertyMap";
-import { ProspectTable } from "./components/ProspectTable/ProspectTable";
-import { CampaignManager } from "./components/CampaignManager/CampaignManager";
-import { AgentStatus } from "./components/AgentStatus/AgentStatus";
+import Dashboard from "./components/Dashboard/Dashboard";
+import PropertyMap from "./components/PropertyMap/PropertyMap";
+import ProspectTable from "./components/ProspectTable/ProspectTable";
+import CampaignManager from "./components/CampaignManager/CampaignManager";
+import AgentStatus from "./components/AgentStatus/AgentStatus";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: "\u2302" },

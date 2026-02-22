@@ -50,10 +50,10 @@ export function usePropertyMap(county?: string) {
 // Scores
 // ---------------------------------------------------------------------------
 
-export function useScores(filters: PropertyFilters = {}) {
+export function useScores(params: Record<string, string | number> = {}) {
   return useQuery({
-    queryKey: ["scores", filters],
-    queryFn: () => getScores(filters),
+    queryKey: ["scores", params],
+    queryFn: () => getScores(params),
   });
 }
 
@@ -117,28 +117,28 @@ export function useResumeCampaign() {
 // Pipeline / Agents
 // ---------------------------------------------------------------------------
 
-export function usePipelineStatus(pipelineId: string | null, isRunning: boolean) {
+export function usePipelineStatus(isRunning: boolean) {
   return useQuery({
-    queryKey: ["pipelineStatus", pipelineId],
-    queryFn: () => getPipelineStatus(pipelineId!),
-    enabled: !!pipelineId,
+    queryKey: ["pipelineStatus"],
+    queryFn: () => getPipelineStatus(),
     refetchInterval: isRunning ? 5000 : false,
   });
 }
 
 export function useStartPipeline() {
   return useMutation({
-    mutationFn: (county: string) => startPipeline(county),
+    mutationFn: (payload: { counties: string[]; use_mock: boolean }) =>
+      startPipeline(payload),
     onSuccess: (_data: PipelineStatus) => {
       // caller should capture pipeline id from response
     },
   });
 }
 
-export function useAgentRuns(pipelineId?: string, isRunning?: boolean) {
+export function useAgentRuns(isRunning?: boolean) {
   return useQuery({
-    queryKey: ["agentRuns", pipelineId],
-    queryFn: () => getAgentRuns(pipelineId),
+    queryKey: ["agentRuns"],
+    queryFn: () => getAgentRuns(),
     refetchInterval: isRunning ? 5000 : false,
   });
 }

@@ -27,10 +27,12 @@ class Owner(Base):
     sos_entity_name: Mapped[str | None] = mapped_column(String(500))
     sos_entity_number: Mapped[str | None] = mapped_column(String(50))
     officer_name: Mapped[str | None] = mapped_column(String(500))
+    contact_title: Mapped[str | None] = mapped_column(String(200))
     email: Mapped[str | None] = mapped_column(String(320))
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     phone: Mapped[str | None] = mapped_column(String(20))
     mailing_address: Mapped[str | None] = mapped_column(Text)
+    contacts: Mapped[list | None] = mapped_column(JSONB)  # All officers/contacts from SOS
 
     confidence_score: Mapped[float] = mapped_column(Float, default=0.0)
     confidence_factors: Mapped[dict | None] = mapped_column(JSONB)

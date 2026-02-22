@@ -8,6 +8,7 @@ mock client that returns realistic data for development/testing.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import re
 from abc import ABC, abstractmethod
 
@@ -184,7 +185,13 @@ class MockSOSLookupClient(BaseSOSLookupClient):
             "entity_type": "LLC",
             "status": "Active",
             "agent_name": "James R. Wilson",
+            "agent_title": "Managing Partner",
+            "agent_phone": "(310) 555-0142",
             "agent_address": "1200 Wilshire Blvd, Suite 400, Los Angeles, CA 90017",
+            "officers": [
+                {"name": "James R. Wilson", "title": "Managing Partner", "phone": "(310) 555-0142", "address": "1200 Wilshire Blvd, Suite 400, Los Angeles, CA 90017"},
+                {"name": "Sarah Chen", "title": "CFO", "phone": "(310) 555-0143", "address": "1200 Wilshire Blvd, Suite 400, Los Angeles, CA 90017"},
+            ],
         },
         "golden": {
             "entity_name": "GOLDEN STATE PROPERTIES INC",
@@ -192,7 +199,14 @@ class MockSOSLookupClient(BaseSOSLookupClient):
             "entity_type": "Corp",
             "status": "Active",
             "agent_name": "Maria L. Chen",
+            "agent_title": "CEO",
+            "agent_phone": "(415) 555-0198",
             "agent_address": "555 Montgomery St, Suite 1500, San Francisco, CA 94111",
+            "officers": [
+                {"name": "Maria L. Chen", "title": "CEO", "phone": "(415) 555-0198", "address": "555 Montgomery St, Suite 1500, San Francisco, CA 94111"},
+                {"name": "David Kim", "title": "VP of Operations", "phone": "(415) 555-0199", "address": "555 Montgomery St, Suite 1500, San Francisco, CA 94111"},
+                {"name": "Robert Taylor", "title": "Property Manager", "phone": "(415) 555-0200", "address": "555 Montgomery St, Suite 1500, San Francisco, CA 94111"},
+            ],
         },
         "sunrise": {
             "entity_name": "SUNRISE REALTY GROUP LP",
@@ -200,7 +214,13 @@ class MockSOSLookupClient(BaseSOSLookupClient):
             "entity_type": "LP",
             "status": "Active",
             "agent_name": "Robert K. Patel",
+            "agent_title": "Principal",
+            "agent_phone": "(323) 555-0177",
             "agent_address": "9800 La Cienega Blvd, Suite 200, Inglewood, CA 90301",
+            "officers": [
+                {"name": "Robert K. Patel", "title": "Principal", "phone": "(323) 555-0177", "address": "9800 La Cienega Blvd, Suite 200, Inglewood, CA 90301"},
+                {"name": "Angela Davis", "title": "Facilities Manager", "phone": "(323) 555-0178", "address": "9800 La Cienega Blvd, Suite 200, Inglewood, CA 90301"},
+            ],
         },
         "valley": {
             "entity_name": "VALLEY INVESTMENT TRUST",
@@ -208,7 +228,12 @@ class MockSOSLookupClient(BaseSOSLookupClient):
             "entity_type": "Corp",
             "status": "Active",
             "agent_name": "Susan M. Nguyen",
+            "agent_title": "President",
+            "agent_phone": "(925) 555-0133",
             "agent_address": "2300 Clayton Rd, Suite 100, Concord, CA 94520",
+            "officers": [
+                {"name": "Susan M. Nguyen", "title": "President", "phone": "(925) 555-0133", "address": "2300 Clayton Rd, Suite 100, Concord, CA 94520"},
+            ],
         },
         "coastal": {
             "entity_name": "COASTAL DEVELOPMENT PARTNERS LLC",
@@ -216,7 +241,13 @@ class MockSOSLookupClient(BaseSOSLookupClient):
             "entity_type": "LLC",
             "status": "Active",
             "agent_name": "David A. Thompson",
+            "agent_title": "Managing Director",
+            "agent_phone": "(949) 555-0156",
             "agent_address": "300 Spectrum Center Dr, Suite 400, Irvine, CA 92618",
+            "officers": [
+                {"name": "David A. Thompson", "title": "Managing Director", "phone": "(949) 555-0156", "address": "300 Spectrum Center Dr, Suite 400, Irvine, CA 92618"},
+                {"name": "Jennifer Hall", "title": "Director of Development", "phone": "(949) 555-0157", "address": "300 Spectrum Center Dr, Suite 400, Irvine, CA 92618"},
+            ],
         },
         "west": {
             "entity_name": "WESTERN COMMERCIAL CORP",
@@ -224,7 +255,12 @@ class MockSOSLookupClient(BaseSOSLookupClient):
             "entity_type": "Corp",
             "status": "Inactive",
             "agent_name": "Linda S. Martinez",
+            "agent_title": "CEO",
+            "agent_phone": "(510) 555-0189",
             "agent_address": "1999 Harrison St, Suite 1600, Oakland, CA 94612",
+            "officers": [
+                {"name": "Linda S. Martinez", "title": "CEO", "phone": "(510) 555-0189", "address": "1999 Harrison St, Suite 1600, Oakland, CA 94612"},
+            ],
         },
     }
 
@@ -269,13 +305,18 @@ class MockSOSLookupClient(BaseSOSLookupClient):
         detected_type = self._detect_entity_type(name_lower)
         if detected_type:
             entity_name_upper = entity_name.upper().strip()
+            contacts = self._generate_contacts(name_lower)
+            primary = contacts[0]
             result = {
                 "entity_name": entity_name_upper,
                 "entity_number": self._generate_entity_number(detected_type),
                 "entity_type": detected_type,
                 "status": "Active",
-                "agent_name": "John Q. Smith",
-                "agent_address": "100 Main St, Suite 200, Sacramento, CA 95814",
+                "agent_name": primary["name"],
+                "agent_title": primary["title"],
+                "agent_phone": primary["phone"],
+                "agent_address": primary["address"],
+                "officers": contacts,
             }
             logger.info(
                 "mock_sos_lookup_generated",
@@ -294,6 +335,66 @@ class MockSOSLookupClient(BaseSOSLookupClient):
             if re.search(pattern, name_lower):
                 return entity_type
         return None
+
+    # Pools for generating realistic varied contacts
+    _FIRST_NAMES = [
+        "James", "Robert", "Michael", "David", "Richard", "Thomas", "Daniel",
+        "Maria", "Jennifer", "Patricia", "Linda", "Susan", "Karen", "Lisa",
+        "William", "Joseph", "Charles", "Mark", "Steven", "Andrew", "Kevin",
+        "Sarah", "Jessica", "Angela", "Melissa", "Michelle", "Amanda", "Stephanie",
+    ]
+    _LAST_NAMES = [
+        "Wilson", "Chen", "Patel", "Thompson", "Garcia", "Martinez", "Rodriguez",
+        "Kim", "Nguyen", "Lee", "Brown", "Johnson", "Williams", "Jones",
+        "Davis", "Miller", "Anderson", "Taylor", "Thomas", "Moore", "Jackson",
+        "White", "Harris", "Martin", "Clark", "Lewis", "Walker", "Hall",
+    ]
+    _TITLES = [
+        "CEO", "President", "Managing Partner", "Principal",
+        "CFO", "VP of Operations", "Director of Development",
+        "Facilities Manager", "Property Manager", "General Manager",
+        "COO", "Managing Director", "Senior Partner",
+    ]
+    _STREETS = [
+        "Wilshire Blvd", "Century Park E", "Avenue of the Stars", "Olympic Blvd",
+        "Figueroa St", "Grand Ave", "Hope St", "Spring St", "Broadway",
+        "La Cienega Blvd", "Ventura Blvd", "Sherman Oaks Ave",
+    ]
+    _CITIES = [
+        "Los Angeles", "Irvine", "San Diego", "Pasadena", "Glendale",
+        "Burbank", "Torrance", "Long Beach", "Santa Monica", "Beverly Hills",
+    ]
+    _AREA_CODES = ["213", "310", "323", "424", "562", "626", "714", "818", "858", "909", "949", "951"]
+
+    def _generate_contacts(self, name_lower: str) -> list[dict]:
+        """Generate 1-3 realistic contacts deterministically from entity name."""
+        seed = int(hashlib.md5(name_lower.encode()).hexdigest()[:8], 16)
+
+        def pick(pool: list, offset: int = 0) -> str:
+            return pool[(seed + offset) % len(pool)]
+
+        num_contacts = (seed % 3) + 1  # 1, 2, or 3 contacts
+
+        contacts = []
+        for i in range(num_contacts):
+            first = pick(self._FIRST_NAMES, i * 7)
+            last = pick(self._LAST_NAMES, i * 13)
+            title = pick(self._TITLES, i * 5)
+            area = pick(self._AREA_CODES, i * 3)
+            phone = f"({area}) {(seed + i * 111) % 900 + 100}-{(seed + i * 37) % 9000 + 1000}"
+            street_num = (seed + i * 200) % 9000 + 100
+            street = pick(self._STREETS, i * 11)
+            city = pick(self._CITIES, i * 9)
+            suite = (seed + i * 50) % 900 + 100
+
+            contacts.append({
+                "name": f"{first} {last}",
+                "title": title,
+                "phone": phone,
+                "address": f"{street_num} {street}, Suite {suite}, {city}, CA",
+            })
+
+        return contacts
 
     @staticmethod
     def _generate_entity_number(entity_type: str) -> str:

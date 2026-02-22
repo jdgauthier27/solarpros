@@ -337,8 +337,13 @@ class OwnerIDAgent(BaseAgent):
         elif email_result and email_result.get("email"):
             email_quality_score = ContactConfidenceScorer.EMAIL_FOUND_UNVERIFIED
 
-        # Phone is not discovered in this phase; default to not found
-        phone_quality_score = ContactConfidenceScorer.PHONE_NOT_FOUND
+        # Phone from SOS result
+        phone = sos_result.get("agent_phone") if sos_result else None
+        phone_quality_score = (
+            ContactConfidenceScorer.PHONE_DIRECT
+            if phone
+            else ContactConfidenceScorer.PHONE_NOT_FOUND
+        )
 
         confidence_score, confidence_factors = self.scorer.compute(
             {
@@ -356,6 +361,36 @@ class OwnerIDAgent(BaseAgent):
             else None
         )
 
+        # Build contacts list from SOS officers + Hunter position info
+        contacts_list = None
+        if sos_result and sos_result.get("officers"):
+            contacts_list = []
+            for officer in sos_result["officers"]:
+                contact = {
+                    "name": officer.get("name"),
+                    "title": officer.get("title"),
+                    "phone": officer.get("phone"),
+                    "address": officer.get("address"),
+                }
+                # Attach email to matching contact
+                if (
+                    owner_email
+                    and officer.get("name")
+                    and sos_result.get("agent_name")
+                    and officer["name"] == sos_result["agent_name"]
+                ):
+                    contact["email"] = owner_email
+                    if email_result and email_result.get("position"):
+                        contact["title"] = email_result["position"]
+                contacts_list.append(contact)
+
+        # Primary contact title from SOS or Hunter
+        contact_title = None
+        if sos_result and sos_result.get("agent_title"):
+            contact_title = sos_result["agent_title"]
+        elif email_result and email_result.get("position"):
+            contact_title = email_result["position"]
+
         async with async_session_factory() as session:
             owner = Owner(
                 property_id=property_uuid,
@@ -364,11 +399,14 @@ class OwnerIDAgent(BaseAgent):
                 sos_entity_name=sos_result["entity_name"] if sos_result else None,
                 sos_entity_number=sos_result["entity_number"] if sos_result else None,
                 officer_name=sos_result.get("agent_name") if sos_result else None,
+                contact_title=contact_title,
                 email=owner_email,
                 email_verified=email_verified,
+                phone=phone,
                 mailing_address=(
                     sos_result.get("agent_address") if sos_result else None
                 ),
+                contacts=contacts_list,
                 confidence_score=confidence_score,
                 confidence_factors=confidence_factors,
             )

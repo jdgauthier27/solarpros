@@ -1,6 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getScores } from '../../api/client';
 
+interface Contact {
+  name: string | null;
+  title: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+}
+
 interface Prospect {
   id: string;
   property_id: string;
@@ -12,8 +20,12 @@ interface Prospect {
   year_built: number | null;
   owner_name: string | null;
   entity_type: string | null;
+  contact_name: string | null;
+  contact_title: string | null;
   email: string | null;
   email_verified: boolean;
+  phone: string | null;
+  contacts: Contact[] | null;
   system_size_kw: number | null;
   annual_savings: number | null;
   payback_years: number | null;
@@ -117,7 +129,7 @@ const ProspectTable: React.FC = () => {
                 <tr style={{ background: '#f9fafb' }}>
                   <th style={thStyle}>Address</th>
                   <th style={thStyle}>County</th>
-                  <th style={thStyle}>Owner</th>
+                  <th style={thStyle}>Contact</th>
                   <th style={thStyle}>Tier</th>
                   <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('composite_score')}>Score{sortIcon('composite_score')}</th>
                   <th style={{ ...thStyle, cursor: 'pointer' }} onClick={() => handleSort('system_size_kw')}>System{sortIcon('system_size_kw')}</th>
@@ -141,8 +153,9 @@ const ProspectTable: React.FC = () => {
                       </td>
                       <td style={tdStyle}>{p.county}</td>
                       <td style={tdStyle}>
-                        <div style={{ fontWeight: 500, color: '#111827' }}>{p.owner_name || '-'}</div>
-                        <div style={{ fontSize: '11px', color: '#9ca3af' }}>{p.entity_type || ''}</div>
+                        <div style={{ fontWeight: 500, color: '#111827' }}>{p.contact_name || p.owner_name || '-'}</div>
+                        <div style={{ fontSize: '11px', color: '#6b7280' }}>{p.contact_title || p.entity_type || ''}</div>
+                        {p.phone && <div style={{ fontSize: '11px', color: '#2563eb' }}>{p.phone}</div>}
                       </td>
                       <td style={tdStyle}><span style={tierBadge(p.tier)}>{p.tier}</span></td>
                       <td style={{ ...tdStyle, fontWeight: 700, color: '#111827' }}>{p.composite_score}</td>
@@ -154,19 +167,55 @@ const ProspectTable: React.FC = () => {
                     {expandedId === p.id && (
                       <tr>
                         <td colSpan={9} style={{ padding: '16px 20px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            {/* Left: Contact Details */}
                             <div>
-                              <div style={detailLabel}>Building</div>
-                              <div style={detailValue}>{p.building_type || '-'} | {p.year_built || '-'}</div>
-                            </div>
-                            <div>
-                              <div style={detailLabel}>Email</div>
-                              <div style={detailValue}>
-                                {p.email || 'N/A'}
-                                {p.email_verified && <span style={{ color: '#059669', marginLeft: '4px' }}> verified</span>}
+                              <div style={detailLabel}>Primary Contact</div>
+                              <div style={{ marginBottom: '8px' }}>
+                                <div style={detailValue}>{p.contact_name || p.owner_name || 'N/A'}</div>
+                                {p.contact_title && <div style={{ fontSize: '12px', color: '#6b7280' }}>{p.contact_title}</div>}
+                                <div style={{ display: 'flex', gap: '16px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                  {p.email && (
+                                    <span style={{ fontSize: '12px', color: '#2563eb' }}>
+                                      {p.email}
+                                      {p.email_verified && <span style={{ color: '#059669', marginLeft: '4px', fontSize: '11px' }}>(verified)</span>}
+                                    </span>
+                                  )}
+                                  {p.phone && <span style={{ fontSize: '12px', color: '#2563eb' }}>{p.phone}</span>}
+                                </div>
                               </div>
+
+                              {/* Additional Contacts */}
+                              {p.contacts && p.contacts.length > 1 && (
+                                <>
+                                  <div style={{ ...detailLabel, marginTop: '12px' }}>Other Contacts ({p.contacts.length - 1})</div>
+                                  {p.contacts.slice(1).map((c, i) => (
+                                    <div key={i} style={{ padding: '8px 12px', background: '#fff', borderRadius: '6px', border: '1px solid #e5e7eb', marginBottom: '6px' }}>
+                                      <div style={{ fontWeight: 500, fontSize: '13px', color: '#111827' }}>{c.name || 'N/A'}</div>
+                                      {c.title && <div style={{ fontSize: '11px', color: '#6b7280' }}>{c.title}</div>}
+                                      <div style={{ display: 'flex', gap: '12px', marginTop: '2px', flexWrap: 'wrap' }}>
+                                        {c.phone && <span style={{ fontSize: '11px', color: '#2563eb' }}>{c.phone}</span>}
+                                        {c.email && <span style={{ fontSize: '11px', color: '#2563eb' }}>{c.email}</span>}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
+
+                              {p.contacts && p.contacts.length <= 1 && !p.contacts?.length && (
+                                <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>No additional contacts</div>
+                              )}
                             </div>
+
+                            {/* Right: Property & Score Details */}
                             <div>
+                              <div style={detailLabel}>Property Details</div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                                <div><span style={{ fontSize: '11px', color: '#6b7280' }}>Building: </span><span style={{ fontSize: '12px' }}>{p.building_type || '-'}</span></div>
+                                <div><span style={{ fontSize: '11px', color: '#6b7280' }}>Year Built: </span><span style={{ fontSize: '12px' }}>{p.year_built || '-'}</span></div>
+                                <div><span style={{ fontSize: '11px', color: '#6b7280' }}>Entity: </span><span style={{ fontSize: '12px' }}>{p.owner_name || '-'} ({p.entity_type || '-'})</span></div>
+                              </div>
+
                               <div style={detailLabel}>Score Breakdown</div>
                               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                 {([
@@ -183,10 +232,6 @@ const ProspectTable: React.FC = () => {
                                   </span>
                                 ))}
                               </div>
-                            </div>
-                            <div>
-                              <div style={detailLabel}>Property ID</div>
-                              <div style={{ ...detailValue, fontSize: '11px', fontFamily: 'monospace' }}>{p.property_id}</div>
                             </div>
                           </div>
                         </td>
@@ -217,7 +262,7 @@ const selectStyle: React.CSSProperties = { padding: '8px 12px', border: '1px sol
 const thStyle: React.CSSProperties = { padding: '10px 16px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', fontWeight: 600, color: '#374151', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', userSelect: 'none' };
 const tdStyle: React.CSSProperties = { padding: '10px 16px', borderBottom: '1px solid #f3f4f6', color: '#4b5563', verticalAlign: 'top' };
 const detailLabel: React.CSSProperties = { fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '4px' };
-const detailValue: React.CSSProperties = { fontSize: '13px', color: '#111827' };
+const detailValue: React.CSSProperties = { fontSize: '13px', color: '#111827', fontWeight: 500 };
 
 const tierBadge = (tier: string): React.CSSProperties => ({
   display: 'inline-block', padding: '2px 10px', borderRadius: '12px', fontWeight: 600, fontSize: '12px',

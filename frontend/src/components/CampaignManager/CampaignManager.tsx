@@ -94,7 +94,7 @@ const CampaignManager: React.FC = () => {
   const handleTogglePause = async (campaign: Campaign) => {
     const newStatus = campaign.status === 'active' ? 'paused' : 'active';
     try {
-      await api.patch(`/api/v1/campaigns/${campaign.id}`, { status: newStatus });
+      await api.patch(`/campaigns/${campaign.id}`, { status: newStatus });
       fetchCampaigns();
     } catch (err) {
       console.error('Failed to update campaign', err);

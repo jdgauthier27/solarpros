@@ -102,10 +102,13 @@ export interface GeoJSONFeature {
   };
   properties: {
     id: string;
+    apn: string;
     address: string;
     county: string;
-    tier: string;
-    score: number;
+    is_commercial: boolean;
+    roof_sqft: number | null;
+    tier: string | null;
+    score: number | null;
     owner_name: string | null;
     system_size_kw: number | null;
   };
@@ -117,7 +120,7 @@ export interface GeoJSONCollection {
 }
 
 export interface ScoreDistribution {
-  range: string;
+  bucket: string;
   count: number;
 }
 
@@ -180,15 +183,16 @@ export interface AgentRun {
 
 export interface DashboardOverview {
   total_properties: number;
-  analyzed_count: number;
-  scored_count: number;
+  total_analyzed: number;
+  total_scored: number;
+  total_campaigns: number;
   tier_a_count: number;
   tier_b_count: number;
   tier_c_count: number;
   avg_score: number;
-  emails_sent: number;
-  emails_opened: number;
-  emails_replied: number;
+  total_emails_sent: number;
+  total_opens: number;
+  total_replies: number;
 }
 
 export interface FunnelStage {

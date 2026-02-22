@@ -180,7 +180,7 @@ export function PropertyMap() {
             geojson?.features.map((feature: GeoJSONFeature) => {
               const { coordinates } = feature.geometry;
               const props = feature.properties;
-              const color = TIER_COLORS[props.tier] || "#999";
+              const color = TIER_COLORS[props.tier ?? ""] || "#999";
 
               return (
                 <CircleMarker

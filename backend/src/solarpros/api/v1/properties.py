@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from solarpros.db.session import get_db
-from solarpros.models import Property, ProspectScore
+from solarpros.models import Owner, Property, ProspectScore, SolarAnalysis
 from solarpros.schemas import (
     GeoJSONFeature,
     GeoJSONFeatureCollection,
@@ -29,22 +29,28 @@ async def get_properties_map(
     db: AsyncSession = Depends(get_db),
 ) -> GeoJSONFeatureCollection:
     """Return a GeoJSON FeatureCollection of properties with lat/lng."""
-    stmt = select(Property).where(
-        Property.latitude.isnot(None),
-        Property.longitude.isnot(None),
+    stmt = (
+        select(Property, ProspectScore, Owner, SolarAnalysis)
+        .outerjoin(ProspectScore, ProspectScore.property_id == Property.id)
+        .outerjoin(Owner, Owner.property_id == Property.id)
+        .outerjoin(SolarAnalysis, SolarAnalysis.property_id == Property.id)
+        .where(
+            Property.latitude.isnot(None),
+            Property.longitude.isnot(None),
+        )
     )
 
     if county:
         stmt = stmt.where(Property.county == county)
 
     if tier:
-        stmt = stmt.join(ProspectScore).where(ProspectScore.tier == tier)
+        stmt = stmt.where(ProspectScore.tier == tier)
 
     result = await db.execute(stmt)
-    properties = result.scalars().all()
+    rows = result.all()
 
     features: list[GeoJSONFeature] = []
-    for prop in properties:
+    for prop, score, owner, solar in rows:
         feature = GeoJSONFeature(
             geometry={
                 "type": "Point",
@@ -57,6 +63,10 @@ async def get_properties_map(
                 "address": prop.address,
                 "is_commercial": prop.is_commercial,
                 "roof_sqft": prop.roof_sqft,
+                "tier": score.tier if score else None,
+                "score": round(score.composite_score, 1) if score else None,
+                "owner_name": owner.owner_name_clean if owner else prop.owner_name_raw,
+                "system_size_kw": round(solar.system_size_kw, 1) if solar else None,
             },
         )
         features.append(feature)

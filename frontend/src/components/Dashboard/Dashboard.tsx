@@ -150,15 +150,15 @@ export function Dashboard() {
 
   const kpis: { label: string; value: string | number }[] = [
     { label: "Total Properties", value: overview.total_properties },
-    { label: "Analyzed", value: overview.analyzed_count },
-    { label: "Scored", value: overview.scored_count },
+    { label: "Analyzed", value: overview.total_analyzed },
+    { label: "Scored", value: overview.total_scored },
     { label: "Tier A", value: overview.tier_a_count },
     { label: "Tier B", value: overview.tier_b_count },
     { label: "Tier C", value: overview.tier_c_count },
     { label: "Avg Score", value: overview.avg_score.toFixed(1) },
-    { label: "Emails Sent", value: overview.emails_sent },
-    { label: "Opens", value: overview.emails_opened },
-    { label: "Replies", value: overview.emails_replied },
+    { label: "Emails Sent", value: overview.total_emails_sent },
+    { label: "Opens", value: overview.total_opens },
+    { label: "Replies", value: overview.total_replies },
   ];
 
   return (
@@ -204,7 +204,7 @@ export function Dashboard() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={distribution}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="range" tick={{ fontSize: 12 }} />
+              <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Bar dataKey="count" fill={DIST_COLOR} radius={[4, 4, 0, 0]} />

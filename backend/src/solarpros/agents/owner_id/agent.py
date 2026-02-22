@@ -122,7 +122,14 @@ class OwnerIDAgent(BaseAgent):
     # ----- LLM entity resolution -----
 
     async def _resolve_entity(self, raw_name: str) -> ResolvedEntity:
-        """Use LangChain + Claude to clean and classify the raw owner name."""
+        """Clean and classify the raw owner name.
+
+        Uses LangChain + Claude when real APIs are enabled, otherwise
+        falls back to a simple heuristic-based mock resolver.
+        """
+        if settings.use_mock_apis:
+            return self._mock_resolve_entity(raw_name)
+
         llm = ChatAnthropic(
             model="claude-sonnet-4-20250514",
             api_key=settings.anthropic_api_key,
@@ -142,6 +149,61 @@ class OwnerIDAgent(BaseAgent):
             is_business=result.is_business,
         )
         return result
+
+    @staticmethod
+    def _mock_resolve_entity(raw_name: str) -> ResolvedEntity:
+        """Heuristic-based entity resolution for mock/dev mode."""
+        name_upper = raw_name.upper()
+
+        # Detect entity type from common suffixes
+        is_business = False
+        entity_type = "Individual"
+        domain_guess = None
+
+        if "LLC" in name_upper:
+            entity_type = "LLC"
+            is_business = True
+        elif "INC" in name_upper or "CORP" in name_upper:
+            entity_type = "Corp"
+            is_business = True
+        elif "LP" in name_upper or "PARTNERS" in name_upper:
+            entity_type = "LP"
+            is_business = True
+        elif "TRUST" in name_upper:
+            entity_type = "Trust"
+            is_business = False
+        elif any(kw in name_upper for kw in ("PROPERTIES", "HOLDINGS", "INVESTMENTS", "REALTY", "GROUP", "CAPITAL", "ENTERPRISES", "VENTURES")):
+            entity_type = "LLC"
+            is_business = True
+
+        # Clean name: title case, strip common noise
+        clean_name = raw_name.strip()
+        for noise in (" C/O ", " ET AL", " TR ", " DTD "):
+            idx = clean_name.upper().find(noise)
+            if idx != -1:
+                clean_name = clean_name[:idx]
+        clean_name = clean_name.strip().title()
+
+        # Domain guess for businesses
+        if is_business:
+            slug = re.sub(r"[^a-z0-9]", "", clean_name.lower().replace("llc", "").replace("inc", "").replace("corp", "").replace("lp", ""))
+            if slug:
+                domain_guess = f"{slug}.com"
+
+        logger.info(
+            "entity_resolved_mock",
+            raw_name=raw_name,
+            clean_name=clean_name,
+            entity_type=entity_type,
+            is_business=is_business,
+        )
+
+        return ResolvedEntity(
+            clean_name=clean_name,
+            entity_type=entity_type,
+            is_business=is_business,
+            domain_guess=domain_guess,
+        )
 
     # ----- Name matching helper -----
 

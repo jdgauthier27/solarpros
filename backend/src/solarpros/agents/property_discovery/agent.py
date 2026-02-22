@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import structlog
+from geoalchemy2.shape import from_shape
+from shapely.geometry import Point
 from sqlalchemy import select
 
 from solarpros.agents.base import BaseAgent
@@ -126,6 +128,12 @@ class PropertyDiscoveryAgent(BaseAgent):
                         duplicates += 1
                     else:
                         # Create new property
+                        lat = prop_data.get("latitude")
+                        lng = prop_data.get("longitude")
+                        location = None
+                        if lat is not None and lng is not None:
+                            location = from_shape(Point(lng, lat), srid=4326)
+
                         new_property = Property(
                             apn=prop_data["apn"],
                             county=prop_data["county"],
@@ -133,6 +141,9 @@ class PropertyDiscoveryAgent(BaseAgent):
                             city=prop_data.get("city"),
                             state=prop_data.get("state", "CA"),
                             zip_code=prop_data.get("zip_code"),
+                            latitude=lat,
+                            longitude=lng,
+                            location=location,
                             zoning=prop_data.get("zoning"),
                             building_type=prop_data.get("building_type"),
                             building_sqft=prop_data.get("building_sqft"),

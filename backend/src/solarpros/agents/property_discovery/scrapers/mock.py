@@ -42,26 +42,26 @@ _STREET_NAMES = [
 ]
 
 _CITIES = [
-    ("Los Angeles", "90001"),
-    ("Los Angeles", "90012"),
-    ("Los Angeles", "90015"),
-    ("Torrance", "90501"),
-    ("Long Beach", "90802"),
-    ("Pasadena", "91101"),
-    ("Glendale", "91201"),
-    ("Burbank", "91502"),
-    ("Downey", "90241"),
-    ("Inglewood", "90301"),
-    ("Hawthorne", "90250"),
-    ("Culver City", "90232"),
-    ("Pomona", "91766"),
-    ("West Covina", "91790"),
-    ("Whittier", "90601"),
-    ("Alhambra", "91801"),
-    ("El Monte", "91731"),
-    ("Compton", "90220"),
-    ("Carson", "90745"),
-    ("Santa Clarita", "91350"),
+    ("Los Angeles", "90001", (33.94, 34.09), (-118.35, -118.15)),
+    ("Los Angeles", "90012", (34.04, 34.07), (-118.26, -118.22)),
+    ("Los Angeles", "90015", (34.03, 34.05), (-118.29, -118.26)),
+    ("Torrance", "90501", (33.79, 33.82), (-118.33, -118.30)),
+    ("Long Beach", "90802", (33.76, 33.79), (-118.20, -118.16)),
+    ("Pasadena", "91101", (34.14, 34.16), (-118.16, -118.13)),
+    ("Glendale", "91201", (34.14, 34.16), (-118.26, -118.23)),
+    ("Burbank", "91502", (34.17, 34.19), (-118.33, -118.30)),
+    ("Downey", "90241", (33.93, 33.96), (-118.14, -118.11)),
+    ("Inglewood", "90301", (33.95, 33.97), (-118.36, -118.33)),
+    ("Hawthorne", "90250", (33.91, 33.93), (-118.36, -118.33)),
+    ("Culver City", "90232", (34.00, 34.02), (-118.41, -118.38)),
+    ("Pomona", "91766", (34.04, 34.07), (-117.77, -117.73)),
+    ("West Covina", "91790", (34.06, 34.08), (-117.94, -117.90)),
+    ("Whittier", "90601", (33.97, 34.00), (-118.04, -118.00)),
+    ("Alhambra", "91801", (34.08, 34.10), (-118.14, -118.11)),
+    ("El Monte", "91731", (34.07, 34.09), (-118.04, -118.00)),
+    ("Compton", "90220", (33.88, 33.91), (-118.24, -118.20)),
+    ("Carson", "90745", (33.82, 33.85), (-118.27, -118.24)),
+    ("Santa Clarita", "91350", (34.38, 34.41), (-118.56, -118.52)),
 ]
 
 _COMMERCIAL_ZONING_CODES = ["C-1", "C-2", "C-3", "C-M", "M-1", "M-2"]
@@ -134,12 +134,14 @@ def _generate_apn() -> str:
     return f"{part1}-{part2}-{part3}"
 
 
-def _generate_address() -> tuple[str, str, str]:
-    """Return (street_address, city, zip_code)."""
+def _generate_address() -> tuple[str, str, str, float, float]:
+    """Return (street_address, city, zip_code, latitude, longitude)."""
     number = random.randint(100, 29999)
     street = random.choice(_STREET_NAMES)
-    city, zip_code = random.choice(_CITIES)
-    return f"{number} {street}", city, zip_code
+    city, zip_code, lat_range, lng_range = random.choice(_CITIES)
+    latitude = round(random.uniform(*lat_range), 6)
+    longitude = round(random.uniform(*lng_range), 6)
+    return f"{number} {street}", city, zip_code, latitude, longitude
 
 
 def _generate_owner_name() -> str:
@@ -208,7 +210,7 @@ class MockScraper(BaseScraper):
 
         properties: list[dict] = []
         for _ in range(count):
-            address, city, zip_code = _generate_address()
+            address, city, zip_code, latitude, longitude = _generate_address()
             building_sqft = random.randint(5000, 200000)
             # Roof sqft is typically 30-60% of building sqft for commercial
             roof_pct = random.uniform(0.30, 0.60)
@@ -223,6 +225,8 @@ class MockScraper(BaseScraper):
                 "city": city,
                 "state": "CA",
                 "zip_code": zip_code,
+                "latitude": latitude,
+                "longitude": longitude,
                 "zoning": random.choice(_COMMERCIAL_ZONING_CODES),
                 "building_type": random.choice(_BUILDING_TYPES),
                 "building_sqft": float(building_sqft),

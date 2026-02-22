@@ -37,6 +37,9 @@ services:
     env_file: .env
     volumes:
       - ./backend/src:/app/src
+      - ./backend/alembic.ini:/app/alembic.ini
+      - ./backend/alembic:/app/alembic
+      - ./scripts:/app/scripts
     depends_on:
       postgres:
         condition: service_healthy

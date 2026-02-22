@@ -36,9 +36,9 @@ async def start_pipeline(
     await db.refresh(run)
 
     # Dispatch the Celery task (lazy import to avoid circular deps)
-    from solarpros.agents.controller import run_pipeline_task
+    from solarpros.agents.controller import run_full_pipeline
 
-    task = run_pipeline_task.delay(str(run.id), payload.counties, payload.use_mock)
+    task = run_full_pipeline.delay(str(run.id), payload.counties, payload.use_mock)
 
     # Store the Celery task ID back on the run
     run.celery_task_id = task.id

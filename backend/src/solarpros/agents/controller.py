@@ -133,17 +133,18 @@ async def _get_qualifying_property_ids() -> list[str]:
 )
 def run_full_pipeline(
     self,
-    counties: list[str],
+    existing_run_id: str | None = None,
+    counties: list[str] | None = None,
     use_mock: bool = True,
     campaign_name: str | None = None,
 ) -> dict:
     """Kick off the full SolarPros pipeline.
 
-    Creates a controller-level ``AgentRun``, then builds a Celery canvas
-    that chains together the five agent stages.
-
     Parameters
     ----------
+    existing_run_id:
+        If the API already created an ``AgentRun``, pass its ID here to
+        reuse it instead of creating a new one.
     counties:
         List of county names to run discovery against.
     use_mock:
@@ -159,6 +160,8 @@ def run_full_pipeline(
     """
     from solarpros.agents.property_discovery.tasks import discover_properties_for_county
 
+    counties = counties or []
+
     logger.info(
         "controller_run_full_pipeline_start",
         counties=counties,
@@ -167,19 +170,28 @@ def run_full_pipeline(
         task_id=self.request.id,
     )
 
-    # 1. Create the top-level controller AgentRun -------------------------
-    parent_run = asyncio.run(
-        _create_agent_run(
-            "controller",
-            celery_task_id=self.request.id,
-            config={
-                "counties": counties,
-                "use_mock": use_mock,
-                "campaign_name": campaign_name,
-            },
+    # 1. Reuse existing AgentRun or create a new one ----------------------
+    if existing_run_id:
+        parent_run_id = existing_run_id
+        asyncio.run(
+            _update_agent_run(
+                uuid.UUID(parent_run_id),
+                status="running",
+            )
         )
-    )
-    parent_run_id = str(parent_run.id)
+    else:
+        parent_run = asyncio.run(
+            _create_agent_run(
+                "controller",
+                celery_task_id=self.request.id,
+                config={
+                    "counties": counties,
+                    "use_mock": use_mock,
+                    "campaign_name": campaign_name,
+                },
+            )
+        )
+        parent_run_id = str(parent_run.id)
 
     try:
         # 2. Build the canvas ---------------------------------------------

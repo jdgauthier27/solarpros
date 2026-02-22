@@ -38,7 +38,7 @@ class SolarAnalysisAgent(BaseAgent):
         super().__init__(**kwargs)
 
         # Choose real vs. mock clients based on config.
-        if settings.use_mock_apis:
+        if settings.solar_use_mock:
             self.google_client = MockGoogleSolarClient()
             self.pvwatts_client = MockPVWattsClient()
         else:

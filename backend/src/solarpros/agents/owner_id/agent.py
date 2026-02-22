@@ -112,7 +112,7 @@ class OwnerIDAgent(BaseAgent):
         self.scorer = ContactConfidenceScorer()
 
         # Select real or mock clients based on config
-        if settings.use_mock_apis:
+        if settings.owner_use_mock:
             self.sos_client: BaseSOSLookupClient = MockSOSLookupClient()
             self.hunter_client: BaseHunterIOClient = MockHunterIOClient()
         else:
@@ -127,11 +127,11 @@ class OwnerIDAgent(BaseAgent):
         Uses LangChain + Claude when real APIs are enabled, otherwise
         falls back to a simple heuristic-based mock resolver.
         """
-        if settings.use_mock_apis:
+        if settings.owner_use_mock:
             return self._mock_resolve_entity(raw_name)
 
         llm = ChatAnthropic(
-            model="claude-sonnet-4-20250514",
+            model="claude-haiku-4-5-20251001",
             api_key=settings.anthropic_api_key,
             temperature=0,
             max_tokens=512,

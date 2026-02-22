@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     # Agent Config
     use_mock_scrapers: bool = True
     use_mock_apis: bool = True
+    use_mock_solar: bool | None = None   # Override for solar; falls back to use_mock_apis
+    use_mock_owner: bool | None = None   # Override for owner; falls back to use_mock_apis
+
+    @property
+    def solar_use_mock(self) -> bool:
+        return self.use_mock_solar if self.use_mock_solar is not None else self.use_mock_apis
+
+    @property
+    def owner_use_mock(self) -> bool:
+        return self.use_mock_owner if self.use_mock_owner is not None else self.use_mock_apis
 
     # CAN-SPAM
     company_physical_address: str = "123 Solar Way, Suite 100, Los Angeles, CA 90001"

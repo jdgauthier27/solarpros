@@ -108,9 +108,6 @@ async def get_campaign_metrics(
         func.count(EmailSend.opened_at).label("opened"),
         func.count(EmailSend.clicked_at).label("clicked"),
         func.count(EmailSend.replied_at).label("replied"),
-        func.sum(
-            func.cast(EmailSend.status == "bounced", type_=func.count.type)
-        ).label("bounced_raw"),
     ).where(EmailSend.campaign_id == campaign_id)
 
     result = await db.execute(stmt)
@@ -122,14 +119,12 @@ async def get_campaign_metrics(
     clicked = row.clicked or 0
     replied = row.replied or 0
 
-    # Count bounced via status column
     bounced_stmt = (
         select(func.count(EmailSend.id))
         .where(EmailSend.campaign_id == campaign_id)
         .where(EmailSend.status == "bounced")
     )
-    bounced_result = await db.execute(bounced_stmt)
-    bounced = bounced_result.scalar() or 0
+    bounced = (await db.execute(bounced_stmt)).scalar() or 0
 
     return CampaignMetrics(
         total_sent=total_sent,
